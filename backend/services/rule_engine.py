@@ -5,10 +5,14 @@ from services.technique_mapper import enrich_rules_with_tactic
 
 # Load the dataset once when the server starts
 # This is intentional — no need to re-read the file on every request
-DATA_PATH = Path(__file__).parent.parent / "data" / "blue_team_clean.json"
+BLUE_TEAM_PATH = Path(__file__).parent.parent / "data" / "blue_team_clean.json"
+THREAT_INTEL_PATH = Path(__file__).parent.parent / "data" / "threat_intel.json"
 
-with open(DATA_PATH) as f:
+with open(BLUE_TEAM_PATH) as f:
     RULES = json.load(f)
+
+with open(THREAT_INTEL_PATH) as f:
+    THREATS = json.load(f)
 
 
 def search_rules(query: str) -> list:
@@ -67,3 +71,10 @@ def get_rules_by_technique(technique_id: str) -> list:
     e.g. get_rules_by_technique("T1059") returns all command execution rules.
     """
     return [r for r in RULES if r["mapped_technique"].startswith(technique_id)]
+
+def get_threat_ids():
+
+    ids = set()
+
+    for threat in THREATS:
+        ids.add(threat["Attack_IDs"])
