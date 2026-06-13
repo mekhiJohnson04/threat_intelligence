@@ -8,7 +8,7 @@ load_dotenv()
 client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 
-async def analyze_threat(user_input: str, rules: list) -> str:
+async def analyze_threat(user_input: str, rules: list, pulse: list) -> str:
     """
     Sends the user query + matching rules to Claude for operational analysis.
     This is the orchestration layer — Claude brings the context the dataset lacks.
@@ -19,6 +19,11 @@ async def analyze_threat(user_input: str, rules: list) -> str:
         rules_context = "No matching rules found in the dataset for this query."
     else:
         rules_context = json.dumps(rules, indent=2)
+
+    if not pulse:
+        pulse_context = "No matching intelligence found in the dataset for this query."
+    else:
+        pulse_context = json.dumps(pulse, indent=2)
 
     system_prompt = """You are a SOC (Security Operations Center) analyst assistant 
 with deep expertise in MITRE ATT&CK and threat detection.
@@ -31,7 +36,8 @@ Your job is to:
 2. Explain what the threat means operationally in plain English
 3. Explain what each detection rule is looking for and which tool runs it
 4. Tell the analyst what to investigate next if this fires
-5. Note any gaps — what this dataset does NOT cover for this threat
+5. Synthesize a coherent campaign narrative from the threat intelligence pulses provided
+6. Note any gaps — what this dataset does NOT cover for this threat
 
 Be direct, operational, and concise. You are talking to a technical analyst, 
 not an executive. No fluff, no filler.
@@ -43,6 +49,10 @@ For section headings use ALL CAPS instead. Keep everything readable as plain tex
 
 Matching detection rules from dataset:
 {rules_context}
+
+Matching threat intelligence pulses from dataset:
+{pulse_context}
+
 
 Provide your operational analysis."""
 

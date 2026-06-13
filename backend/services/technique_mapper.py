@@ -156,3 +156,19 @@ def group_rules_by_tactic(rules: list) -> dict:
             grouped[tactic] = []
         grouped[tactic].append(rule)
     return grouped
+
+HIGH_SIGNAL_PREFIXES = ("cve-", "apt", "apt-")
+
+HIGH_SIGNAL_TAGS = {
+    "cobalt strike", "mimikatz", "psexec", "lockbit", "ransomware-as-a-service",
+    "supply chain attack", "zero-day", "credential dumping", "lateral movement",
+    "lateral-movement", "credential-theft", "credential harvesting",
+    "double extortion", "living off the land", "byovd", "zerologon",
+    "pass-the-hash", "kerberoasting", "dll sideloading", "process injection"
+}
+
+def is_high_signal(tag: str) -> bool:
+    tag_lower = tag.lower()
+    if any(tag_lower.startswith(p) for p in HIGH_SIGNAL_PREFIXES):
+        return True
+    return tag_lower in HIGH_SIGNAL_TAGS

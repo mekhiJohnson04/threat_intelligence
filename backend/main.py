@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from services.rule_engine import search_rules
+from services.rule_engine import search_rules, get_intelligence, get_related_threat_intel, get_pulse_context
 from services.claude_service import analyze_threat
 
 app = FastAPI()
@@ -31,13 +31,29 @@ async def search(query: dict):
     # 2. Search the dataset — YOUR logic in rule_engine.py
     matching_rules = search_rules(user_input)
 
+    mapped_techniques = set()
+
+    for rule in matching_rules:
+        mapped_techniques.add(rule["mapped_technique"])
+    
+    matched_pulses = []
+    for technique in mapped_techniques:
+        matched_pulses.extend(get_related_threat_intel(technique_id=technique))
+
+    
+    pulse_context = get_pulse_context(matched_pulses=matched_pulses)
+
+    intelligence = get_intelligence(matched_pulses=matched_pulses)
+
+
     # 3. Send rules + query to Claude for operational analysis
-    analysis = await analyze_threat(user_input, matching_rules)
+    analysis = await analyze_threat(user_input, matching_rules, pulse_context)
 
     # 4. Return everything to the frontend as JSON
     return {
         "rules": matching_rules,
-        "analysis": analysis
+        "analysis": analysis,
+        "intelligence": intelligence
     }
 
 

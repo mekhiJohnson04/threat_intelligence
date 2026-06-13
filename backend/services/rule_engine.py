@@ -1,8 +1,7 @@
 import json
 from pathlib import Path
 from collections import Counter
-from services.technique_mapper import enrich_rules_with_tactic
-
+from services.technique_mapper import enrich_rules_with_tactic, is_high_signal
 # Load the dataset once when the server starts
 # This is intentional — no need to re-read the file on every request
 BLUE_TEAM_PATH = Path(__file__).parent.parent / "data" / "blue_team_clean.json"
@@ -12,7 +11,7 @@ with open(BLUE_TEAM_PATH) as f:
     RULES = json.load(f)
 
 with open(THREAT_INTEL_PATH) as f:
-    THREATS = json.load(f)
+    THREAT_INTEL = json.load(f)
 
 
 def search_rules(query: str) -> list:
@@ -72,9 +71,82 @@ def get_rules_by_technique(technique_id: str) -> list:
     """
     return [r for r in RULES if r["mapped_technique"].startswith(technique_id)]
 
-def get_threat_ids():
+def get_related_threat_intel(technique_id: str) -> list:
+    base = technique_id.split(".")[0] # the actual part of the id we need (e.g. "T1059".001 )
+    matches = []
 
-    ids = set()
+    for pulse in THREAT_INTEL:
+        attack_ids = set(
+            t.strip() for t in str(pulse.get("Attack_IDs", "")).split(",")
+        )
 
-    for threat in THREATS:
-        ids.add(threat["Attack_IDs"])
+        if base in attack_ids:
+            matches.append(pulse)
+
+    return matches
+
+def get_intelligence(matched_pulses: list) -> dict:
+    malware_families = set()
+    industries = set()
+    countries = set()
+    tags = set()
+
+    for pulse in matched_pulses:
+        malware_families.update(x.strip() for x in str(pulse.get("Malware_Families", "")).split(","))
+        industries.update(y.strip() for y in str(pulse.get("Industries", "")).split(","))
+        countries.update(parse_countries(pulse.get("Countries", "")))
+        tags.update(
+        t.strip() for t in str(pulse.get("Tags", "")).split(",")
+            if t.strip() and is_high_signal(t.strip())
+        )
+
+    
+    return { # None is python's null value, so when converted to json, None gets serialized to null
+        "malware_families": list(malware_families) or None,
+        "industries": list(industries) or None,
+        "countries": list(countries) or None,
+        "tags": list(tags) or None,
+        "pulse_count": len(matched_pulses)
+    }
+
+def get_pulse_context(matched_pulses: list) -> list:
+
+    return [ 
+        {
+            "title": p.get("Title", ""),
+            "description": p.get("Description", ""),
+            "malware_families": p.get("Malware_Families", ""),
+            "attack_ids": p.get("Attack_IDs", "")
+        }
+        for p in matched_pulses
+    ]
+
+
+MULTIPART_SUFFIXES = (
+    "Islamic Republic of",
+    "U.S.",
+    "Republic of",
+    "Democratic People's Republic of",
+)
+
+def parse_countries(raw: str) -> set:
+    if not raw or raw.strip() == "Unknown":
+        return set()
+    
+    parts = [p.strip() for p in raw.split(",")]
+    
+    countries = set()
+    i = 0
+    while i < len(parts):
+        if i + 2 < len(parts) and f"{parts[i + 1]}, {parts[i + 2]}" == "Democratic People's Republic of":
+            countries.add(f"{parts[i]}, Democratic People's Republic of")
+            i += 3
+        elif i + 1 < len(parts) and parts[i + 1] in MULTIPART_SUFFIXES:
+            countries.add(f"{parts[i]}, {parts[i + 1]}")
+            i += 2
+        else:
+            if parts[i]:
+                countries.add(parts[i])
+            i += 1
+    
+    return countries
