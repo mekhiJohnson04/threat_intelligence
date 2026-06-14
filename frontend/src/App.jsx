@@ -9,6 +9,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [query, setQuery] = useState("")
+  const [intelligence, setIntelligence] = useState(null)
 
   const handleSearch = async () => {
     if (!query.trim()) return
@@ -27,6 +28,7 @@ export default function App() {
       const data = await response.json()
       setRules(data.rules)
       setAnalysis(data.analysis)
+      setIntelligence(data.intelligence)
     } catch (err) {
       setError(`CONNECTION FAILED — ${err.message}`)
     } finally {
@@ -103,7 +105,7 @@ export default function App() {
           ))}
         </div>
 
-        <AnalysisPanel analysis={analysis} loading={loading} />
+        <AnalysisPanel analysis={analysis} loading={loading} intelligence={intelligence}/>
       </div>
     </div>
   )

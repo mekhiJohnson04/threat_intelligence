@@ -497,3 +497,120 @@ body {
   font-size: 11px;
   color: var(--red);
 }
+
+/* ── TABS ────────────────────────────────────────────────── */
+.tab-group {
+  display: flex;
+  gap: 4px;
+}
+
+.tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tab-btn:hover {
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+
+.tab-btn.active {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+  background: var(--accent-glow);
+}
+
+.tab-count {
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 8px;
+  padding: 1px 5px;
+  border-radius: 10px;
+}
+
+/* ── INTEL CONTENT ───────────────────────────────────────── */
+.intel-content {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.intel-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.intel-stat-number {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.intel-stat-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.intel-section {
+  margin-bottom: 20px;
+}
+
+.intel-section-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.intel-section-count {
+  color: var(--text-dim);
+  font-size: 9px;
+}
+
+/* ── CHIPS ───────────────────────────────────────────────── */
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chip {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 2px;
+  letter-spacing: 0.04em;
+}
+
+.chip-red    { background: rgba(248,81,73,0.1);   color: #f85149; border: 1px solid rgba(248,81,73,0.25); }
+.chip-blue   { background: rgba(0,168,255,0.08);  color: var(--accent); border: 1px solid rgba(0,168,255,0.2); }
+.chip-yellow { background: rgba(210,153,34,0.1);  color: var(--yellow); border: 1px solid rgba(210,153,34,0.25); }
+.chip-purple { background: rgba(124,106,247,0.1); color: var(--sigma);  border: 1px solid rgba(124,106,247,0.25); }
+.chip-dim    { background: var(--bg-raised);      color: var(--text-secondary); border: 1px solid var(--border); }
