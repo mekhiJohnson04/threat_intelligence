@@ -6,12 +6,16 @@ from services.technique_mapper import enrich_rules_with_tactic, is_high_signal
 # This is intentional — no need to re-read the file on every request
 BLUE_TEAM_PATH = Path(__file__).parent.parent / "data" / "blue_team_clean.json"
 THREAT_INTEL_PATH = Path(__file__).parent.parent / "data" / "threat_intel.json"
+CVE_VULNERABILITIES_PATH = Path(__file__).parent.parent / "data" / "cve_vulnerabilities.json"
 
 with open(BLUE_TEAM_PATH) as f:
     RULES = json.load(f)
 
 with open(THREAT_INTEL_PATH) as f:
     THREAT_INTEL = json.load(f)
+
+with open(CVE_VULNERABILITIES_PATH) as f:
+    CVE_VULNERABILITIES = json.load(f)
 
 
 def search_rules(query: str) -> list:
@@ -150,3 +154,31 @@ def parse_countries(raw: str) -> set:
             i += 1
     
     return countries
+
+CVE_LOOKUP = {cve["cveID"].lower(): cve for cve in CVE_VULNERABILITIES}
+
+def get_cve_intelligence(tags: list):
+    """
+        Returns all cveIDs from the dataset that are found in the high signal tags.
+    """
+    matches = []
+    seen_cve_id = set()
+
+    for tag in tags:
+        if tag.lower() in CVE_LOOKUP and tag.lower() not in seen_cve_id:
+            cve = CVE_LOOKUP.get(tag.lower())
+            matches.append(
+                {
+                    "vendor_project": cve.get("vendorProject", ""),
+                    "product": cve.get("product", ""),
+                    "vulnerability_name": cve.get("vulnerabilityName", "") ,
+                    "description": cve.get("shortDescription", ""),
+                    "required_action": cve.get("requiredAction", "")
+                }
+            )
+
+            seen_cve_id.add(tag.lower())
+
+    return matches
+
+            

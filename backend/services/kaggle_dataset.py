@@ -1,38 +1,15 @@
-MULTIPART_SUFFIXES = (
-    "Islamic Republic of",
-    "U.S.",
-    "Republic of",
-    "Democratic People's Republic of",
-)
+import json
 
-def parse_countries(raw: str) -> set:
-    if not raw or raw.strip() == "Unknown":
-        return set()
-    
-    parts = [p.strip() for p in raw.split(",")]
-    
-    countries = set()
-    i = 0
-    while i < len(parts):
-        if i + 2 < len(parts) and f"{parts[i + 1]}, {parts[i + 2]}" == "Democratic People's Republic of":
-            countries.add(f"{parts[i]}, Democratic People's Republic of")
-            i += 3
-        elif i + 1 < len(parts) and parts[i + 1] in MULTIPART_SUFFIXES:
-            countries.add(f"{parts[i]}, {parts[i + 1]}")
-            i += 2
-        else:
-            if parts[i]:
-                countries.add(parts[i])
-            i += 1
-    
-    return countries
-
-import json 
-
-with open('backend/data/threat_intel.json') as f:
+with open('data/threat_intel.json') as f:
     data = json.load(f)
 
+# Print every field of first record
+print(json.dumps(data[0], indent=2))
+
 for pulse in data:
-    result = parse_countries(pulse.get('Countries', ''))
-    if 'Republic of' in result:
-        print(repr(pulse.get('Countries', '')))
+    for key, value in pulse.items():
+        if isinstance(value, str) and 'cve' in value.lower():
+            print(f"Field: {key}")
+            print(repr(value[:200]))
+            print()
+            break

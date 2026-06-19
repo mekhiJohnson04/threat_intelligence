@@ -10,6 +10,7 @@ export default function App() {
   const [error, setError] = useState("")
   const [query, setQuery] = useState("")
   const [intelligence, setIntelligence] = useState(null)
+  const [cve_intelligence, setCVE] = useState(null)
 
   const handleSearch = async () => {
     if (!query.trim()) return
@@ -29,6 +30,7 @@ export default function App() {
       setRules(data.rules)
       setAnalysis(data.analysis)
       setIntelligence(data.intelligence)
+      setCVE(data.cve_intelligence)
     } catch (err) {
       setError(`CONNECTION FAILED — ${err.message}`)
     } finally {
@@ -105,7 +107,12 @@ export default function App() {
           ))}
         </div>
 
-        <AnalysisPanel analysis={analysis} loading={loading} intelligence={intelligence}/>
+        <AnalysisPanel
+         analysis={analysis} 
+         loading={loading} 
+         intelligence={intelligence}
+         cveIntelligence={cve_intelligence}
+         />
       </div>
     </div>
   )
