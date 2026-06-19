@@ -1,7 +1,61 @@
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 
-export default function AnalysisPanel({ analysis, loading, intelligence }) {
+function CVEChip({ tag, cveData }) {
+  const [hovered, setHovered] = useState(false)
+  const [typed, setTyped] = useState("")
+  const intervalRef = useRef(null)
+
+  const fullText = cveData
+    ? `${cveData.vulnerability_name}\n\n${cveData.vendor_project} · ${cveData.product}\n\n${cveData.description}\n\nREQUIRED ACTION\n${cveData.required_action}`
+    : ""
+
+  useEffect(() => {
+    if (hovered && fullText) {
+      setTyped("")
+      let i = 0
+      intervalRef.current = setInterval(() => {
+        i++
+        setTyped(fullText.slice(0, i))
+        if (i >= fullText.length) clearInterval(intervalRef.current)
+      }, 8)
+    } else {
+      clearInterval(intervalRef.current)
+      setTyped("")
+    }
+    return () => clearInterval(intervalRef.current)
+  }, [hovered])
+
+  return (
+    <span
+      className="chip-cve-wrapper"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <span className={`chip ${cveData ? "chip-yellow chip-interactive" : "chip-yellow"}`}>
+        {tag}
+      </span>
+
+      {hovered && cveData && (
+        <div className="cve-tooltip">
+          <div className="cve-tooltip-content">
+            {typed.split("\n").map((line, i) => (
+              <p key={i}>{line}</p>
+            ))}
+            <span className="cve-cursor">▌</span>
+          </div>
+        </div>
+      )}
+    </span>
+  )
+}
+
+export default function AnalysisPanel({ analysis, loading, intelligence, cveIntelligence }) {
   const [activeTab, setActiveTab] = useState("assessment")
+
+  const cveLookup = {}
+  cveIntelligence?.forEach(cve => {
+    cveLookup[cve.cve_id.toLowerCase()] = cve
+  })
 
   return (
     <div className="analysis-panel">
@@ -61,13 +115,11 @@ export default function AnalysisPanel({ analysis, loading, intelligence }) {
             </div>
           ) : (
             <>
-              {/* Stat */}
               <div className="intel-stat">
                 <span className="intel-stat-number">{intelligence.pulse_count}</span>
                 <span className="intel-stat-label">Threat Campaigns Matched</span>
               </div>
 
-              {/* Malware Families */}
               {intelligence.malware_families?.length > 0 && (
                 <div className="intel-section">
                   <div className="intel-section-label">
@@ -85,7 +137,6 @@ export default function AnalysisPanel({ analysis, loading, intelligence }) {
                 </div>
               )}
 
-              {/* Industries */}
               {intelligence.industries?.length > 0 && (
                 <div className="intel-section">
                   <div className="intel-section-label">
@@ -100,7 +151,6 @@ export default function AnalysisPanel({ analysis, loading, intelligence }) {
                 </div>
               )}
 
-              {/* Countries */}
               {intelligence.countries?.length > 0 && (
                 <div className="intel-section">
                   <div className="intel-section-label">
@@ -115,7 +165,6 @@ export default function AnalysisPanel({ analysis, loading, intelligence }) {
                 </div>
               )}
 
-              {/* Tags */}
               {intelligence.tags?.length > 0 && (
                 <div className="intel-section">
                   <div className="intel-section-label">
@@ -123,11 +172,14 @@ export default function AnalysisPanel({ analysis, loading, intelligence }) {
                     <span className="intel-section-count">{intelligence.tags.length}</span>
                   </div>
                   <div className="chip-group">
-                    {intelligence.tags.map((t, i) => (
-                      <span key={i} className={`chip ${t.toLowerCase().startsWith("cve") ? "chip-yellow" : "chip-purple"}`}>
-                        {t}
-                      </span>
-                    ))}
+                    {intelligence.tags.map((t, i) => {
+                      const isCve = t.toLowerCase().startsWith("cve")
+                      const cveData = isCve ? cveLookup[t.toLowerCase()] : null
+                      if (isCve && !cveData) return null  // drop unmatched CVEs
+                      return isCve
+                        ? <CVEChip key={i} tag={t} cveData={cveData} />
+                        : <span key={i} className="chip chip-purple">{t}</span>
+                    })}
                   </div>
                 </div>
               )}

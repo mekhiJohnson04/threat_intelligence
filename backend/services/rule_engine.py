@@ -169,6 +169,7 @@ def get_cve_intelligence(tags: list):
             cve = CVE_LOOKUP.get(tag.lower())
             matches.append(
                 {
+                    "cve_id": cve.get("cveID", ""),
                     "vendor_project": cve.get("vendorProject", ""),
                     "product": cve.get("product", ""),
                     "vulnerability_name": cve.get("vulnerabilityName", "") ,
