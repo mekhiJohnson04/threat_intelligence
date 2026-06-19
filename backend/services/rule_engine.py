@@ -24,15 +24,15 @@ def search_rules(query: str) -> list:
     This is where YOUR filtering logic lives — write this yourself,
     extend it, break it, rebuild it. This is the hands-on work.
     """
-    query = query.lower()
+    tokens = query.lower().split()
     matches = []
 
     for rule in RULES:
-        threat_match = query in rule["threat"].lower()
-        technique_match = query in rule["mapped_technique"].lower()
-        rule_type_match = query in rule["rule_type"].lower()
+        threat = rule["threat"].lower()
+        technique = rule["mapped_technique"].lower()
+        rule_type = rule["rule_type"].lower()
 
-        if threat_match or technique_match or rule_type_match:
+        if any(token in threat or token in technique or token in rule_type for token in tokens):
             matches.append(rule)
 
     return enrich_rules_with_tactic(matches)

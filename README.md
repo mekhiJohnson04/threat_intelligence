@@ -58,11 +58,3 @@ npm run dev
 | POST | /api/search | Main search — takes user input, returns rules + Claude analysis |
 | GET | /api/coverage | Returns ATT&CK technique coverage counts |
 | GET | /api/rules/{type} | Filter rules by Sigma, YARA, or Suricata |
-
-## What to build on your own (the hands-on work)
-
-- Extend `rule_engine.py` with smarter search logic
-- Add fuzzy matching for partial technique ID queries
-- Build a coverage gap visualization using /api/coverage
-- Improve the system prompt in `claude_service.py`
-- Add filtering by tactic category in the UI
