@@ -51,12 +51,12 @@ async def search(query: dict):
 
 
     # 3. Send rules + query to Claude for operational analysis
-    # analysis = await analyze_threat(user_input, matching_rules, pulse_context)
+    analysis = await analyze_threat(user_input, matching_rules, pulse_context)
 
     # 4. Return everything to the frontend as JSON
     return {
         "rules": matching_rules,
-        "analysis": "Analysis disabled for testing",
+        "analysis": analysis,
         "intelligence": intelligence,
         "cve_intelligence": cve_intelligence
     }
