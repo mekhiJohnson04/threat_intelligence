@@ -3,7 +3,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from services.rule_engine import search_rules, get_intelligence, get_related_threat_intel, get_pulse_context, get_cve_intelligence
 from services.claude_service import analyze_threat
 
-app = FastAPI()
+
+from contextlib import asynccontextmanager
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from services.sync_service import update_cve_data
+
+scheduler = AsyncIOScheduler()
+
+
+@asynccontextmanager
+async def lifespan(app):
+    scheduler.add_job(update_cve_data, "interval", hours=24)
+    scheduler.start()
+    await update_cve_data()
+    yield
+    scheduler.shutdown()
+
+app = FastAPI(lifespan=lifespan)
 
 # CORS — allows your frontend (localhost:5173) to talk to
 # this backend (localhost:8000). Without this the browser blocks it.
@@ -74,3 +90,5 @@ def rules_by_type(rule_type: str):
     # Filter rules by Sigma, YARA, or Suricata
     from services.rule_engine import filter_by_rule_type
     return filter_by_rule_type(rule_type)
+
+
