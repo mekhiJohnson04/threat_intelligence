@@ -2,6 +2,7 @@ import { useState } from "react"
 import RuleCard from "./components/RuleCard"
 import AnalysisPanel from "./components/AnalysisPanel"
 import "./App.css"
+import logo from './IMG_4837.png';
 
 export default function App() {
   const [rules, setRules] = useState([])
@@ -47,8 +48,8 @@ export default function App() {
       <div className="topbar">
         <div className="topbar-left">
           <div className="topbar-logo">
-            <div className="logo-mark" />
-            <span className="topbar-title">Threat Intelligence Platform</span>
+            <img src={logo} alt="TIP logo" className="logo-img" />
+            <span className="topbar-title">Arkhived Intelligence</span>
           </div>
           <div className="topbar-divider" />
           <span className="topbar-sub">MITRE ATT&CK · Blue Team</span>
