@@ -2,7 +2,7 @@ import { useState } from "react"
 import RuleCard from "./components/RuleCard"
 import AnalysisPanel from "./components/AnalysisPanel"
 import "./App.css"
-import logo from './IMG_4837.png';
+import logo from "./IMG_4837.png"
 
 export default function App() {
   const [rules, setRules] = useState([])
@@ -19,6 +19,8 @@ export default function App() {
     setError("")
     setRules([])
     setAnalysis("")
+    setIntelligence(null)
+    setCVE(null)
 
     try {
       const response = await fetch("http://localhost:8000/api/search", {
@@ -26,12 +28,50 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ input: query })
       })
+      
       if (!response.ok) throw new Error(`${response.status}`)
-      const data = await response.json()
-      setRules(data.rules)
-      setAnalysis(data.analysis)
-      setIntelligence(data.intelligence)
-      setCVE(data.cve_intelligence)
+      if (!response.body) throw new Error("ReadableStream not supported by response.")
+
+      // 1. Pipe the byte stream directly into a text decoder stream
+      const stream = response.body.pipeThrough(new TextDecoderStream())
+      const reader = stream.getReader()
+      
+      let buffer = ""
+
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+
+        buffer += value
+        
+        // 2. Split chunk buffer by line endings
+        const lines = buffer.split("\n")
+        
+        // Pop the trailing partial line to append to the next network packet read
+        buffer = lines.pop() || ""
+
+        // 3. Process completed line pieces safely
+        for (const line of lines) {
+          if (!line.trim()) continue
+          
+          try {
+            const parsedData = JSON.parse(line)
+
+            // Capture initial metadata configuration block
+            if (parsedData.event === "metadata") {
+              setRules(parsedData.rules || [])
+              setIntelligence(parsedData.intelligence || null)
+              setCVE(parsedData.cve_intelligence || null)
+            } 
+            // Capture incremental analytical string chunks
+            else if (parsedData.event === "analysis") {
+              setAnalysis((prev) => prev + parsedData.text)
+            }
+          } catch (err) {
+            console.error("Failed to parse chunk line:", err)
+          }
+        }
+      }
     } catch (err) {
       setError(`CONNECTION FAILED — ${err.message}`)
     } finally {

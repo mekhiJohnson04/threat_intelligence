@@ -2,7 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from services.rule_engine import search_rules, get_intelligence, get_related_threat_intel, get_pulse_context, get_cve_intelligence
 from services.claude_service import analyze_threat
-
+import json
+from fastapi.responses import StreamingResponse
 
 from contextlib import asynccontextmanager
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -26,6 +27,7 @@ app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -34,21 +36,24 @@ app.add_middleware(
 @app.get("/")
 def root():
     return {"status": "Threat Explorer API is running"}
-
+#Not Done!!! -------------
+@app.route("/api/login", methods=["GET", "POST"])
+def login():
+    pass
+# -------------------------
 
 @app.post("/api/search")
 async def search(query: dict):
-    # 1. Extract user input from request body
+    # Extract user input from request body
     user_input = query.get("input", "")
 
     if not user_input:
         return {"error": "No input provided"}
 
-    # 2. Search the dataset — YOUR logic in rule_engine.py
+    # 1. Fetch all your structured data synchronously/asynchronously first
     matching_rules = search_rules(user_input)
 
     mapped_techniques = set()
-
     for rule in matching_rules:
         mapped_techniques.add(rule["mapped_technique"])
     
@@ -56,27 +61,35 @@ async def search(query: dict):
     for technique in mapped_techniques:
         matched_pulses.extend(get_related_threat_intel(technique_id=technique))
 
-    
     pulse_context = get_pulse_context(matched_pulses=matched_pulses)
-
     intelligence = get_intelligence(matched_pulses=matched_pulses)
-
     cve_intelligence = get_cve_intelligence(intelligence["tags"])
 
+    # Internal generator to orchestrate the stream pipeline
+    async def response_generator():
+        # First event: Send all the compiled metadata to the frontend immediately
+        metadata = {
+            "event": "metadata",
+            "rules": matching_rules,
+            "intelligence": intelligence,
+            "cve_intelligence": cve_intelligence
+        }
+        # yield as a single line json string followed by a newline separator
+        yield json.dumps(metadata) + "\n"
 
+        # Subsequent events: Stream the analysis tokens from Kimi as they hit the server
+        async for analysis_chunk in analyze_threat(user_input=user_input, rules=matching_rules, pulse=pulse_context):
+            chunk_data = {
+                "event": "analysis",
+                "text": analysis_chunk
+            }
+            yield json.dumps(chunk_data) + "\n"
 
-
-    # 3. Send rules + query to Claude for operational analysis
-    analysis = await analyze_threat(user_input, matching_rules, pulse_context)
-
-    # 4. Return everything to the frontend as JSON
-    return {
-        "rules": matching_rules,
-        "analysis": analysis,
-        "intelligence": intelligence,
-        "cve_intelligence": cve_intelligence
-    }
-
+    # Return the StreamingResponse using the generator
+    return StreamingResponse(
+        response_generator(),
+        media_type="application/x-ndjson" # Line-delimited JSON format
+    )
 
 @app.get("/api/coverage")
 def coverage():
